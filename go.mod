@@ -7,6 +7,7 @@ require (
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/justinas/alice v1.2.0
 	github.com/spf13/viper v1.18.2
+	go.uber.org/zap v1.21.0
 )
 
 require (

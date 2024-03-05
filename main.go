@@ -2,9 +2,6 @@ package main
 
 import (
 	"net/http"
-	"sort"
-
-	"github.com/justinas/alice"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -18,22 +15,24 @@ func welcomeHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	p := plugin.Plugins["request_id"]
-	p.Init(`{"header_name": "X-Request-ID", "set_in_response": true}`)
-	// p.Init(`{}`)
 
-	p1 := plugin.Plugins["basic_auth"]
+	p := plugin.New("request_id")
+	p.Init(`{"header_name": "X-Request-ID", "set_in_response": true}`)
+
+	p1 := plugin.New("basic_auth")
 	p1.Init(`{"credentials": {"admin": "admin"}, "realm": "Restricted"}`)
 
-	pChain := []plugin.Plugin{p, p1}
-	sort.Slice(pChain, func(i, j int) bool {
-		return pChain[i].Priority() < pChain[j].Priority()
-	})
-	chain := alice.New()
-	for _, p := range pChain {
-		chain = chain.Append(p.Handler)
-	}
+	p2 := plugin.New("file_logger")
+	p2.Init(`{"level": "info", "filename": "test.log"}`)
+
+	chain := plugin.BuildPluginChain(p, p1, p2)
 	myHandler := http.HandlerFunc(welcomeHandler)
+
+	// ms := make([]func(http.Handler) http.Handler, 2)
+	// for _, p := range pChain {
+	// 	ms = append(ms, p.Handler)
+	// }
+	// chi.Chain(...ms).
 
 	r.Handle("/", chain.Then(myHandler))
 
